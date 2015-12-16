@@ -16,8 +16,8 @@ Right now it could extract
 
 Limitations:
 - no image being extracts
-- no poll information and topic will poll might be extracted incorrectly
+- no poll information and topic with poll might be extracted incorrectly
 - no comments yet
 
-The program will not extract main story unless you fix it a bit. (You can easily see line being commented)
+The program will not write main story into file unless you fix it a bit. (You can easily see line being commented)
 I haven't set up comment part yet because it would be too much work (for me right now)
