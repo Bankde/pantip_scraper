@@ -4,6 +4,15 @@ import numpy as np
 # or just: python pantip_make_graph.py
 PTAGS_DATASET_PATH = 'ptags_dataset.txt'
 
+# To use in auto-select minimum support value as it depends on size of the dataset.
+# This value will select the value as percent of occurence of nth most frequent data
+# eg. TOP_NTH_MIN_SUPPORT = 30
+# 		- means that we select 30th most frequent item in the dataset
+#		- then find its frequency in the dataset, suppose 0.005
+#		- so use 0.005 as minimum support, to have 30 candidates at first layer
+TOP_NTH_MIN_SUPPORT = 100
+
+MINIMUM_CONFIDENCE = 0.4
 
 class Apriori(object):
 
@@ -15,6 +24,7 @@ class Apriori(object):
 			ap = Apriori(0.003)  # custom minimum support 0.003
 			ap.compute(data_path)
 		Tips:
+			"Choosing Minimum Support" 
 			ap.compute(data_path, auto_minimum_support=True)
 
 			will print out percent of occurence of 20th most frequent item 
@@ -37,6 +47,7 @@ class Apriori(object):
 		self.frequencyList = []
 		self.totalDataCount = -1
 		self.totalTagCount = -1
+		self.topNthTags = []
 
 
 	def generateRules(self, L, support_data, min_confidence=0.7):
@@ -95,7 +106,9 @@ class Apriori(object):
 	def loadData(self, dataset_path):
 		"""Load tags data into memory"""
 		dataset = []
-		frequencyList = []
+		self.tagList = []
+		self.frequencyList = []
+		self.topNthTags = []
 		with open(PTAGS_DATASET_PATH, 'r') as f:
 			count = 0
 			count_tag = 0
@@ -122,8 +135,14 @@ class Apriori(object):
 		self.totalDataCount = count
 		self.totalTagCount = count_tag
 		total = len(dataset)
-		topList = sorted(range(len(self.frequencyList)), key=lambda i:self.frequencyList[i], reverse=True)[:20]		
-		auto_minimum_support = float(topList[19])/float(total)
+		# topList = sorted(range(len(self.frequencyList)), key=lambda i:self.frequencyList[i], reverse=True)[:TOP_NTH_MIN_SUPPORT]
+		topList = sorted(range(len(self.frequencyList)), key=lambda i: self.frequencyList[i], reverse=True)[:TOP_NTH_MIN_SUPPORT]		
+		print('\nTOP %s TAGS' % str(TOP_NTH_MIN_SUPPORT))
+		self.topNthTags = [self.tagList[item] for item in topList]
+		for item in self.topNthTags:
+			print item + ' ',
+		print '\n'
+		auto_minimum_support = float(self.frequencyList[self.tagList.index(self.topNthTags[TOP_NTH_MIN_SUPPORT-1])])/float(total)
 		return dataset, auto_minimum_support
 
 
@@ -218,13 +237,13 @@ class Apriori(object):
 		print('=======Computing Frequent List ...')
 		L, support_data = self.computeFrequentList(dataset, min_sup)
 		print('')
-		min_con = 0.7
+		
 		print('=======Generating Rules ...')
-		rules = self.generateRules(L, support_data, min_con)
+		rules = self.generateRules(L, support_data, MINIMUM_CONFIDENCE)
 
 		if saves_result_to_file:
 			print('Saving to ptags_AprioriResults.txt ... ')
-			self.savesResult(L, support_data, rules, min_sup, min_con)		
+			self.savesResult(L, support_data, rules, min_sup, MINIMUM_CONFIDENCE)		
 		end_time = time.time()
 		print('\nDone (%s).' % str(end_time - start_time))
 		return rules
@@ -240,33 +259,52 @@ class Apriori(object):
 		out = open('ptags_AprioriResults.txt', 'w')
 		out.write('Total Data Count: %s\n' % str(self.totalDataCount))
 		out.write('Total Tag Count: %s\n' % str(self.totalTagCount))
+		out.write('Top %s Tags:\n' % TOP_NTH_MIN_SUPPORT)
+		for item in self.topNthTags:			
+			out.write('%s (%s) ' % (item, str(self.frequencyList[self.tagList.index(item)])))			
+		out.write('\n')
 		out.write('Minimum support: %s\n' % str(min_support))
 		out.write('Minimum confidence: %s\n' % str(min_confidence))
 		out.write('\n\n=======Frequent Lists=======\n')
 		k = 0
+
+		import collections
+
 		for Lk in L:
 			k += 1
 			out.write('---(K = %s)----\n' % str(k))
-			for can in Lk:				
-				out.write('(%s) ' % str(support_data[can]))
+			#sort first
+			Lkdict = {}	
+			for can in Lk:
+				item_str = ""
 				for item in can:
-					out.write(item + ' ')
-				out.write('\n')
+					item_str += item + ' '
+				Lkdict[support_data[can]] = item_str
+			od = collections.OrderedDict(sorted(Lkdict.items(), reverse=True))
+			for key, v in od.iteritems():
+				out.write('%s (%s)\n' % (v, key))
+
 		out.write('\n\n=======Association Rules========\n')
+
+		RulesDict = {}
 		for rule in rules:
+			rule_str = ""
 			for item in rule[0]:
-				out.write(item + ' ')
-			out.write(' --> ')
+				rule_str += item + ' '
+			rule_str += ' --> '
 			for item in rule[1]:
-				out.write(item + ' ')
-			out.write(' (%s)\n' % str(rule[2]))		
+				rule_str += item + ' '			
+			RulesDict[rule[2]] = rule_str
+		od = collections.OrderedDict(sorted(RulesDict.items(), reverse=True))
+		for key, v in od.iteritems():
+			out.write('%s (%s)\n' % (v, key))
 		out.close()
 
 
 
 if __name__ == '__main__':
 	ap = Apriori(0.009)
-	rules = ap.compute(PTAGS_DATASET_PATH, auto_minimum_support=False, saves_result_to_file=True)
+	rules = ap.compute(PTAGS_DATASET_PATH, auto_minimum_support=True, saves_result_to_file=True)
 	# for rule in rules:
 	# 	print rule
 
