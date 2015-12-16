@@ -4,9 +4,39 @@ import os
 import fullgraph as fg
 
 THAI_ENCODING = 'utf-8'
-DATASET_PATH = "dataset"
+DATASET_PATH = "pantip_storage"
 
 class PantipGraph(object):
+
+    @staticmethod
+    def create_ptag_dataset(dataset_path, save_path='ptags_dataset.txt'):
+        import os
+        count = 0
+        print('Creating ptags_dataset...')
+        out = open(save_path, 'w')      
+        for root, dirs, files in os.walk(dataset_path, topdown=False):
+            # go into each dataset files
+            print files
+            for name in files:
+                # get full path
+                fname = os.path.join(root, name)
+                if 'ptopic' not in name:
+                    print('Skipping File:' + fname)
+                    continue
+                print('Reading File:' + fname)
+                # read file
+                with open(fname, 'r') as ins:
+                    for line in ins:                        
+                        if line.startswith('Tag-item: '):
+                            # len including new line symbol
+                            if len(line) <= 12:
+                                continue
+                            tags = line.replace('Tag-item: ', '').replace('\n', '').replace('\r', '') + '\n'
+                            out.write(tags) 
+                            count += 1
+        out.close()
+        print('Saved ptags_dataset to: ' + save_path)
+        print('Total topics in dataset = ' + str(count))
 
     @staticmethod
     def tags_graph_from_ptopic_dataset(path):
@@ -54,7 +84,8 @@ class PantipGraph(object):
 
 
 if __name__ == '__main__':
-    PantipGraph.tags_graph_from_ptopic_dataset(DATASET_PATH)
+    PantipGraph.create_ptag_dataset(DATASET_PATH)
+    # PantipGraph.tags_graph_from_ptopic_dataset(DATASET_PATH)
     # fgraph = fg.FullGraph()
     # fgraph.loadGraph()
 
