@@ -10,7 +10,7 @@ PTAGS_DATASET_PATH = 'ptags_dataset.txt'
 # 		- means that we select 30th most frequent item in the dataset
 #		- then find its frequency in the dataset, suppose 0.005
 #		- so use 0.005 as minimum support, to have 30 candidates at first layer
-TOP_NTH_MIN_SUPPORT = 100
+TOP_NTH_MIN_SUPPORT = 240
 
 MINIMUM_CONFIDENCE = 0.4
 
