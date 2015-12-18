@@ -10,7 +10,7 @@ PTAGS_DATASET_PATH = 'ptags_dataset.txt'
 # 		- means that we select 30th most frequent item in the dataset
 #		- then find its frequency in the dataset, suppose 0.005
 #		- so use 0.005 as minimum support, to have 30 candidates at first layer
-TOP_NTH_MIN_SUPPORT = 240
+TOP_NTH_MIN_SUPPORT = 300
 
 MINIMUM_CONFIDENCE = 0.4
 
@@ -287,18 +287,30 @@ class Apriori(object):
 		out.write('\n\n=======Association Rules========\n')
 
 		RulesDict = {}
+		countH = 1
 		for rule in rules:
+			# found increasing size of H
+			if len(rule[1]) != countH:
+				# sort for size = H
+				out.write('---(%s)---\n' % str(countH))
+				od = collections.OrderedDict(sorted(RulesDict.items(), reverse=True))
+				for key, v in od.iteritems():
+					out.write('%s (%s)\n' % (v, key))									
+				RulesDict = {}
+				countH += 1
+
 			rule_str = ""
 			for item in rule[0]:
 				rule_str += item + ' '
 			rule_str += ' --> '
 			for item in rule[1]:
 				rule_str += item + ' '			
-			RulesDict[rule[2]] = rule_str
+			RulesDict[rule[2]] = rule_str	
+		out.write('---(%s)---\n' % str(countH))
 		od = collections.OrderedDict(sorted(RulesDict.items(), reverse=True))
 		for key, v in od.iteritems():
-			out.write('%s (%s)\n' % (v, key))
-		out.close()
+			out.write('%s (%s)\n' % (v, key))			
+		out.close()					
 
 
 
