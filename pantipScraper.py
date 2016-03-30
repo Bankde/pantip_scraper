@@ -1,5 +1,14 @@
 #!/opt/local/bin/python
 
+############################################################
+#
+## Created by DarkDrag0nite ##
+#
+#  Example: python pantipScraper.py <start_topic_id>
+#
+############################################################
+
+
 from lxml import html
 import requests
 from requests.exceptions import ConnectionError, ReadTimeout
