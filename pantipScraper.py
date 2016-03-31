@@ -10,6 +10,7 @@
 
 
 from lxml import html
+import json
 import requests
 from requests.exceptions import ConnectionError, ReadTimeout
 import time
@@ -45,9 +46,6 @@ def validateText(text):
 	validateText = re.sub('<img[\w"\'\\/=\s]*>', "(img)", validateText)
 	return validateText
 
-# def getReadTopicSet(f):
-# 	for line in f:
-
 class ReturnData:
 
 	def __init__(self, status, data):
@@ -62,8 +60,8 @@ class ReturnData:
 
 class PantipCrawler:
 
-	def __init__(self, id):
-		self.id = id
+	def __init__(self, tid):
+		self.tid = tid
 		self.commentCount = 0
 		self.topic = ''
 		self.comments = ''
@@ -71,25 +69,30 @@ class PantipCrawler:
 	def crawl(self):
 		while True:
 			try:
-				functionData = self.get_topic_from_link(self.id)
+				# Get Main Topic
+				functionData = Topic.get_topic_from_link(self.tid)
 				if functionData.getStatus() == False:
 					return functionData
 				else:
 					self.topic = functionData.getData()
-				# self.topic = self.get_topic_from_link(self.id)
 
-				functionData = self.get_comments_from_link(self.id)
+				# Get Comments
+				functionData = self.get_comments_from_link()
 				if functionData.getStatus == False:
 					return functionData
 				else:
 					self.comments = functionData.getData()
 
+				# print json.dumps(self.comments, ensure_ascii=False)
+				# s = json.dumps(self.topic.toDict(), ensure_ascii=False)
+
+				# Get Comment count
 				if self.comments and 'count' not in self.comments:
 					self.commentCount = 0
 				else:
 					self.commentCount = self.comments['count']
 
-				rData = ReturnData(True, "Success: Crawling page %s"%(self.id))
+				rData = ReturnData(True, "Success: Crawling page %s"%(self.tid))
 				return rData
 			except ConnectionError as e:
 				print "Connection error: Program will try again in 10s. Ctrl+c to quit"
@@ -98,48 +101,13 @@ class PantipCrawler:
 				print "Request timeout: Program will try again in 10s. Ctrl+c to quit"
 				time.sleep(10)
 
-	def get_topic_from_link(self, id):
-		global udg_header
-		index = 0
-		while(index < 4):
-			start_page = requests.get("http://pantip.com/topic/%s"%(self.id), 
-				headers=udg_header_comment)
-			if (start_page.reason == 'OK'):
-				break
-			else:
-				index = index + 1
-			if index == 4:
-				rData = ReturnData(False, "Cannot open page %s: "%(self.id) + start_page.reason)
-				return rData
-
-		start_page.encoding = udg_thaiEncode
-		validText = validateText(start_page.text)
-		# print validText
-
-		tree = html.fromstring(validText)
-		if tree.xpath('//div[starts-with(@class,"callback-status")]/text()'):
-			if not tree.xpath('//h2[@class="display-post-title"]/text()'):
-				rData = ReturnData(False, tree.xpath('//div[starts-with(@class,"callback-status")]/text()')[0].strip())
-				return rData
-		name = tree.xpath('//h2[@class="display-post-title"]/text()')[0]
-		author = tree.xpath('//a[@class="display-post-name owner"]/text()')[0]
-		story = tree.xpath('//div[@class="display-post-story"]/text()')[0]
-		like = tree.xpath('//span[starts-with(@class,"like-score")]/text()')[0]
-		emo = tree.xpath('//span[starts-with(@class,"emotion-score")]/text()')[0]
-		tags = tree.xpath('//div[@class="display-post-tag-wrapper"]/a[@class="tag-item"]/text()')
-		dateTime = tree.xpath('//abbr[@class="timeago"]/@data-utime')[0]
-
-		topic = Topic(name, author, story, like, emo, tags, dateTime)
-		rData = ReturnData(True, topic)
-		return rData
-
-	def get_comments_from_link(self, id):
+	def get_comments_from_link(self):
 		global udg_header_comment
-		udg_header_comment['Referer'] = "http://pantip.com/topic/%s"%(id)
+		udg_header_comment['Referer'] = "http://pantip.com/topic/%s"%(self.tid)
 		index = 0
 		while(index < 4):
 			random_time = random.random()
-			comment_response = requests.get("http://pantip.com/forum/topic/render_comments?tid=%s&param=&type=3&time=%s"%(id, random_time), 
+			comment_response = requests.get("http://pantip.com/forum/topic/render_comments?tid=%s&param=&type=3&time=%s"%(self.tid, random_time), 
 					headers=udg_header_comment)
 			if (comment_response.reason == 'OK'):
 				break
@@ -160,22 +128,101 @@ class PantipCrawler:
 
 
 class Topic:
-	def __init__(self, name, author, story, like, emo, tags, time):
+	def __init__(self, tid, name, author, author_id, story, like, emo, tags, time):
+		self.tid = tid
 		self.name = name
 		self.author = author
+		self.author_id = author_id
 		self.story = story
 		self.likeScore = like
 		self.emoScore = emo
 		self.tagList = tags
 		self.dateTime = time
 
+	@staticmethod
+	def get_topic_from_link(tid):
+		global udg_header
+		index = 0
+		while(index < 4):
+			start_page = requests.get("http://pantip.com/topic/%s"%(tid), 
+				headers=udg_header_comment)
+			if (start_page.reason == 'OK'):
+				break
+			else:
+				index = index + 1
+			if index == 4:
+				rData = ReturnData(False, "Cannot open page %s: "%(tid) + start_page.reason)
+				return rData
+
+		start_page.encoding = udg_thaiEncode
+		# validText = validateText(start_page.text)
+		tree = html.fromstring(start_page.text)
+		
+		if tree.xpath('//div[starts-with(@class,"callback-status")]/text()'):
+			if not tree.xpath('//h2[@class="display-post-title"]/text()'):
+				rData = ReturnData(False, tree.xpath('//div[starts-with(@class,"callback-status")]/text()')[0].strip())
+				return rData
+
+		name = tree.xpath('//h2[@class="display-post-title"]/text()')[0]
+		author = tree.xpath('//a[@class="display-post-name owner"]/text()')[0]
+		author_id = tree.xpath('//a[@class="display-post-name owner"]/@id')[0]
+		# story = tree.xpath('//div[@class="display-post-story"]/text()')[0]
+		story = tree.xpath('//div[@class="display-post-story"]')[0].text_content()
+		like = tree.xpath('//span[starts-with(@class,"like-score")]/text()')[0]
+		emo = tree.xpath('//span[starts-with(@class,"emotion-score")]/text()')[0]
+		tags = tree.xpath('//div[@class="display-post-tag-wrapper"]/a[@class="tag-item"]/text()')
+		dateTime = tree.xpath('//abbr[@class="timeago"]/@data-utime')[0]
+
+		topic = Topic(tid, name, author, author_id, story, like, emo, tags, dateTime)
+		rData = ReturnData(True, topic)
+		return rData
+
+	def toDict(self):
+		return {
+			'tid': self.tid,
+			'name': self.name,
+			'author' : self.author,
+			'author_id' : self.author_id,
+			'story' : self.story,
+			'likeScore' : self.likeScore,
+			'emoScore' : self.emoScore,
+			'tagList' : self.tagList,
+			'dateTime' : self.dateTime
+		}
+
+	def toJson(self):
+		return json.dumps(self.toDict(), ensure_ascii=False)
+
 	def __str__(self):
 		return ("Name: " + self.name.encode(udg_thaiEncode) +
 			"\r\nAuthor: " + self.author.encode(udg_thaiEncode) +
-			# "\r\nText: " + self.story.encode(udg_thaiEncode) + "\r\n"
+			"\r\nText: " + self.story.encode(udg_thaiEncode) + "\r\n"
 			"\r\nLike Count: %s\r\nEmotion Count: %s"%(self.likeScore, self.emoScore) +
 			"\r\nTag-item: " + ",".join(self.tagList).encode(udg_thaiEncode) +
 			"\r\nDatetime: " + self.dateTime)
+
+class Emotion:
+	def __init__(self, like=0, laugh=0, love=0, deep=0, terrify=0, amaze=0):
+		self.like = like
+		self.laugh = laugh
+		self.love = love
+		self.deep = deep
+		self.terrify = terrify
+		self.amaze = amaze
+
+	def toDict(self):
+		return {
+			'like' : self.like,
+			'laugh' : self.laugh,
+			'love' : self.love,
+			'deep' : self.deep,
+			'terrify' : self.terrify,
+			'amaze' : self.amaze
+		}
+
+	def toJson(self):
+		return json.dumps(self.toDict(), ensure_ascii=False)
+
 
 
 if __name__ == "__main__":
