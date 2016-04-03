@@ -136,14 +136,15 @@ class PantipCrawler:
 		return json.dumps(self.toDict(), ensure_ascii=False)
 
 class Topic:
-	def __init__(self, tid, name, author, author_id, story, like, emo, tags, time):
+	def __init__(self, tid, name, author, author_id, story, likeCount, emoCount, emotions, tags, time):
 		self.tid = tid
 		self.name = name
 		self.author = author
 		self.author_id = author_id
 		self.story = story
-		self.likeScore = like
-		self.emoScore = emo
+		self.likeCount = likeCount
+		self.emoCount = emoCount
+		self.emotions = emotions
 		self.tagList = tags
 		self.dateTime = time
 
@@ -164,6 +165,7 @@ class Topic:
 
 		start_page.encoding = udg_thaiEncode
 		# validText = validateText(start_page.text)
+		# tree = html.fromstring(validText)
 		tree = html.fromstring(start_page.text)
 		
 		if tree.xpath('//div[starts-with(@class,"callback-status")]/text()'):
@@ -176,12 +178,14 @@ class Topic:
 		author_id = tree.xpath('//a[@class="display-post-name owner"]/@id')[0]
 		# story = tree.xpath('//div[@class="display-post-story"]/text()')[0]
 		story = tree.xpath('//div[@class="display-post-story"]')[0].text_content()
-		like = tree.xpath('//span[starts-with(@class,"like-score")]/text()')[0]
-		emo = tree.xpath('//span[starts-with(@class,"emotion-score")]/text()')[0]
+		likeCount = tree.xpath('//span[starts-with(@class,"like-score")]/text()')[0]
+		emoCount = tree.xpath('//span[starts-with(@class,"emotion-score")]/text()')[0]
+		allEmos = tree.xpath('//span[@class="emotion-choice-score"]/text()')
 		tags = tree.xpath('//div[@class="display-post-tag-wrapper"]/a[@class="tag-item"]/text()')
 		dateTime = tree.xpath('//abbr[@class="timeago"]/@data-utime')[0]
 
-		topic = Topic(tid, name, author, author_id, story, like, emo, tags, dateTime)
+		emotions = Emotion(allEmos[0], allEmos[1], allEmos[2], allEmos[3], allEmos[4], allEmos[5])
+		topic = Topic(tid, name, author, author_id, story, likeCount, emoCount, emotions, tags, dateTime)
 		rData = ReturnData(True, topic)
 		return rData
 
@@ -192,8 +196,9 @@ class Topic:
 			'author' : self.author,
 			'author_id' : self.author_id,
 			'story' : self.story,
-			'likeScore' : self.likeScore,
-			'emoScore' : self.emoScore,
+			'likeCount' : self.likeCount,
+			'emoCount' : self.emoCount,
+			'emotions' : self.emotions.toDict(),
 			'tagList' : self.tagList,
 			'dateTime' : self.dateTime
 		}
@@ -205,7 +210,7 @@ class Topic:
 		return ("Name: " + self.name.encode(udg_thaiEncode) +
 			"\r\nAuthor: " + self.author.encode(udg_thaiEncode) +
 			"\r\nText: " + self.story.encode(udg_thaiEncode) + "\r\n"
-			"\r\nLike Count: %s\r\nEmotion Count: %s"%(self.likeScore, self.emoScore) +
+			"\r\nLike Count: %s\r\nEmotion Count: %s"%(self.likeCount, self.emoCount) +
 			"\r\nTag-item: " + ",".join(self.tagList).encode(udg_thaiEncode) +
 			"\r\nDatetime: " + self.dateTime)
 
