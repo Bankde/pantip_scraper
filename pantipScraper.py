@@ -17,6 +17,7 @@ import time
 import random
 import os, sys
 import re
+import codecs
 
 udg_thaiEncode = 'UTF-8'
 udg_header = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.11; rv:42.0) Gecko/20100101 Firefox/42.0'}
@@ -126,6 +127,13 @@ class PantipCrawler:
 		return (str(self.topic) + "\r\n" +
 			"Comment count: %s\r\n"%(self.commentCount))
 
+	def toDict(self):
+		tempDict = self.topic.toDict()
+		tempDict['commentCount'] = self.commentCount
+		return tempDict
+
+	def toJson(self):
+		return json.dumps(self.toDict(), ensure_ascii=False)
 
 class Topic:
 	def __init__(self, tid, name, author, author_id, story, like, emo, tags, time):
@@ -238,13 +246,16 @@ if __name__ == "__main__":
 		if temp_file != storage_file:
 			storage_file = temp_file
 			f.close()
-			f = open(udg_storage_dir + "/ptopic" + storage_file, "a+")
+			f = codecs.open(udg_storage_dir + "/ptopic" + storage_file, "a+", encoding=udg_thaiEncode)
 		crawler = PantipCrawler(str(pageID))
 		functionData = crawler.crawl()
 		if functionData.getStatus() == True:
-			f.write("Topic-id: %s\n"%(pageID))
-			f.write(str(crawler))
-			f.write("\n\n")
+			# f.write("Topic-id: %s\n"%(pageID))
+			# f.write(str(crawler))
+			# writeData = json.dumps(crawler.toJson(), ensure_ascii=False).encode('utf8')
+			# json.dump(writeData, f, ensure_ascii=False)
+			f.write(crawler.toJson().encode('UTF-8'))
+			f.write("\n")
 			indexFile.seek(0,0)
 			indexFile.write("Done: %s\n"%(pageID))
 			print functionData.getData()
