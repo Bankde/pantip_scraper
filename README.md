@@ -1,16 +1,18 @@
 # pantip_scraper
+# Created by DarkDrag0nite
 
 This is web scraper for pantip written in python.
 To use:
-python pantip.py start_topic_id_here
+python pantipScraper.py start_topic_id_here
 
-The data will be store in pantip_storage.
+The data will be store in pantip_storage as JSON.
 Right now it could extract
 - topic name
 - author
 - story
-- like votes
-- emotion votes
+- like Count
+- emotion Count
+- emotions (count of each types)
 - tags
 - comments count
 
@@ -19,5 +21,6 @@ Limitations:
 - no poll information and topic with poll might be extracted incorrectly
 - no comments yet
 
-The program will not write main story into file unless you fix it a bit. (You can easily see line being commented)
-I haven't set up comment part yet because it would be too much work (for me right now)
+I haven't set up comment part yet but very soon I will.
+
+# Credit, Feedback, Suggestion is appreciated.
