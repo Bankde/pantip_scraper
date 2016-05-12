@@ -5,7 +5,7 @@ import json
 import io
 
 data = []
-input_file  = file("example", "r")
+input_file  = file("pantip_storage/example", "r")
 for line in input_file:
 	data.append(json.loads(line))
 

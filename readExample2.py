@@ -7,6 +7,10 @@
 # Another Example #
 ###################
 
+import json
+import io
+
+data = []
 input_file  = file("pantip_storage/ptopic35100", "r")
 for line in input_file:
 	data.append(json.loads(line))
