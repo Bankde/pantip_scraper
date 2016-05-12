@@ -1,12 +1,13 @@
 #!/opt/local/bin/python
 
-############################################################
-#
-## Created by DarkDrag0nite ##
-#
-#  Example: python pantipScraper.py <start_topic_id>
-#
-############################################################
+#############################################################
+#															#
+#  Created by DarkDrag0nite									#
+#															#
+#  To use: python pantipScraper.py <start_topic_id>			#
+#  Example: python pantipScraper.py 35000000				#
+#															#
+#############################################################
 
 
 from lxml import html
@@ -32,20 +33,21 @@ udg_header_comment = {
 }
 udg_storage_dir = "pantip_storage"
 
-def validateText(text):
-	validateText = text.replace("<br>", "")
-	validateText = validateText.replace("<br />", "")
-	validateText = validateText.replace("</br>", "")
-	validateText = validateText.replace("<u>", "")
-	validateText = validateText.replace("</u>", "")
-	validateText = validateText.replace("<i>", "")
-	validateText = validateText.replace("</i>", "")
-	validateText = validateText.replace("<b>", "")
-	validateText = validateText.replace("</b>", "")
-	validateText = validateText.replace("<strong>", "")
-	validateText = validateText.replace("</strong>", "")
-	validateText = re.sub('<img[\w"\'\\/=\s]*>', "(img)", validateText)
-	return validateText
+# # Not being used
+# def validateText(text):
+# 	validateText = text.replace("<br>", "")
+# 	validateText = validateText.replace("<br />", "")
+# 	validateText = validateText.replace("</br>", "")
+# 	validateText = validateText.replace("<u>", "")
+# 	validateText = validateText.replace("</u>", "")
+# 	validateText = validateText.replace("<i>", "")
+# 	validateText = validateText.replace("</i>", "")
+# 	validateText = validateText.replace("<b>", "")
+# 	validateText = validateText.replace("</b>", "")
+# 	validateText = validateText.replace("<strong>", "")
+# 	validateText = validateText.replace("</strong>", "")
+# 	validateText = re.sub('<img[\w"\'\\/=\s]*>', "(img)", validateText)
+# 	return validateText
 
 class ReturnData:
 
@@ -78,7 +80,7 @@ class PantipCrawler:
 					self.topic = functionData.getData()
 
 				# Get Comments
-				functionData = self.get_comments_from_link()
+				functionData = Comment.get_comments_from_link(self.tid)
 				if functionData.getStatus == False:
 					return functionData
 				else:
@@ -101,27 +103,6 @@ class PantipCrawler:
 			except ReadTimeout as e:
 				print "Request timeout: Program will try again in 10s. Ctrl+c to quit"
 				time.sleep(10)
-
-	def get_comments_from_link(self):
-		global udg_header_comment
-		udg_header_comment['Referer'] = "http://pantip.com/topic/%s"%(self.tid)
-		index = 0
-		while(index < 4):
-			random_time = random.random()
-			comment_response = requests.get("http://pantip.com/forum/topic/render_comments?tid=%s&param=&type=3&time=%s"%(self.tid, random_time), 
-					headers=udg_header_comment)
-			if (comment_response.reason == 'OK'):
-				break
-			else:
-				index = index + 1
-			if index == 4:
-				rData = ReturnData(False, "Cannot get comments %s: "%(self.id) + start_page.reason)
-				return rData
-
-		comment_response.encoding = udg_thaiEncode
-		comments = comment_response.json()
-		rData = ReturnData(True, comments)
-		return rData
 
 	def __str__(self):
 		return (str(self.topic) + "\r\n" +
@@ -214,23 +195,85 @@ class Topic:
 			"\r\nTag-item: " + ",".join(self.tagList).encode(udg_thaiEncode) +
 			"\r\nDatetime: " + self.dateTime)
 
+class Comment:
+	def __init__(self, num, user_id, user_name, replies, message, emotions, likeCount, dateTime):
+		self.num = num
+		self.user_id = user_id
+		self.user_name = user_name
+		self.replies = replies
+		self.message = message
+		self.emotions = emotions
+		self.likeCount = likeCount
+		self.dateTime = dateTime
+
+	@staticmethod
+	def get_comments_from_link(tid):
+		global udg_header_comment
+		udg_header_comment['Referer'] = "http://pantip.com/topic/%s"%(tid)
+		index = 0
+		while(index < 4):
+			random_time = random.random()
+			comment_response = requests.get("http://pantip.com/forum/topic/render_comments?tid=%s&param=&type=3&time=%s"%(tid, random_time), 
+					headers=udg_header_comment)
+			if (comment_response.reason == 'OK'):
+				break
+			else:
+				index = index + 1
+			if index == 4:
+				rData = ReturnData(False, "Cannot get comments %s: "%(tid) + start_page.reason)
+				return rData
+
+		comment_response.encoding = udg_thaiEncode
+		comments = comment_response.json()
+
+		# 	jquery.topic-renovate.js
+		# 	$.commentTopic.replyNext = function(){
+		# $(document).on('click','.load-reply-next',function(){
+		# 	var id = $(this).data('lmr').split('-');
+		# 	var lastId = id[0];
+		# 	var refId = id[1];
+		# 	var refCount = id[2];
+		# 	var refBar = $(this).parents('.loadmore-bar-paging.sub-loadmore').get(0).id;
+		# 	#	Owner of TOPIC
+		# 	var owner = $('.main-post-inner').find('.display-post-name.owner').get(0).id;
+			
+		rData = ReturnData(True, comments)
+		return rData		
+
+	def toDict(self):
+		return {
+			'num' : self.num,
+			'user_id' : self.user_id,
+			'user_name' : self.user_name,
+			# I'm still thinking how should I handel the replies
+			'replies' : self.replies,
+			'message' : self.message,
+			'emotions' : self.emotions.toDict(),
+			'likeCount' : self.likeCount,
+			'dateTime' : self.dateTime
+		}
+
+	def toJson(self):
+		return json.dumps(self.toDict(), ensure_ascii=False)
+
+
 class Emotion:
-	def __init__(self, like=0, laugh=0, love=0, deep=0, terrify=0, amaze=0):
+	def __init__(self, like=0, laugh=0, love=0, impress=0, scary=0, surprised=0):
 		self.like = like
 		self.laugh = laugh
 		self.love = love
-		self.deep = deep
-		self.terrify = terrify
-		self.amaze = amaze
+		self.impress = impress
+		self.scary = scary
+		self.surprised = surprised
 
 	def toDict(self):
 		return {
 			'like' : self.like,
 			'laugh' : self.laugh,
 			'love' : self.love,
-			'deep' : self.deep,
-			'terrify' : self.terrify,
-			'amaze' : self.amaze
+			'impress' : self.impress,
+			'scary' : self.scary,
+			'surprised' : self.surprised
 		}
 
 	def toJson(self):
@@ -241,6 +284,10 @@ class Emotion:
 if __name__ == "__main__":
 	if not os.path.exists(udg_storage_dir):
 		os.makedirs(udg_storage_dir)
+	if not len(sys.argv) == 2:
+		print "Please enter starting pageID to start program."
+		print "E.g. python pantipScraper.py 35000000"
+		exit()
 	pageID = (int)(sys.argv[1])
 	storage_file = str(pageID / 1000)
 	f = open(udg_storage_dir + "/ptopic" + storage_file, "a+")
@@ -255,10 +302,6 @@ if __name__ == "__main__":
 		crawler = PantipCrawler(str(pageID))
 		functionData = crawler.crawl()
 		if functionData.getStatus() == True:
-			# f.write("Topic-id: %s\n"%(pageID))
-			# f.write(str(crawler))
-			# writeData = json.dumps(crawler.toJson(), ensure_ascii=False).encode('utf8')
-			# json.dump(writeData, f, ensure_ascii=False)
 			f.write(crawler.toJson().encode('UTF-8'))
 			f.write("\n")
 			indexFile.seek(0,0)
