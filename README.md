@@ -1,8 +1,6 @@
 # pantip_scraper
 Created by DarkDrag0nite
 
-#
-
 This is web scraper for pantip written in python.
 To use: python pantipScraper.py start_topic_id_here
 Example: python pantipScraper.py 35143000
