@@ -1,7 +1,7 @@
 # pantip_scraper
 # Created by DarkDrag0nite
 
-This is web scraper for pantip written in python.
+This is web scraper for pantip written in python 2.7
 
 # How to use
 
@@ -32,6 +32,7 @@ Right now it could extract
 - no poll information and topic with poll might be extracted incorrectly
 - only first 100 comments are gathered (for now, I will update in very near future)
 - no reply to comment yet (sry, I'm working on it)
+- Small problem on reading JSON because of encoding (I suggest using python 3.4 when reading those file, you still need to use python 2.7 to run this program though) 
 
 # Json Structure
 
