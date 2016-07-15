@@ -33,22 +33,6 @@ udg_header_comment = {
 }
 udg_storage_dir = "pantip_storage"
 
-# # Not being used
-# def validateText(text):
-# 	validateText = text.replace("<br>", "")
-# 	validateText = validateText.replace("<br />", "")
-# 	validateText = validateText.replace("</br>", "")
-# 	validateText = validateText.replace("<u>", "")
-# 	validateText = validateText.replace("</u>", "")
-# 	validateText = validateText.replace("<i>", "")
-# 	validateText = validateText.replace("</i>", "")
-# 	validateText = validateText.replace("<b>", "")
-# 	validateText = validateText.replace("</b>", "")
-# 	validateText = validateText.replace("<strong>", "")
-# 	validateText = validateText.replace("</strong>", "")
-# 	validateText = re.sub('<img[\w"\'\\/=\s]*>', "(img)", validateText)
-# 	return validateText
-
 class ReturnData:
 
 	def __init__(self, status, data):
@@ -280,15 +264,25 @@ class Emotion:
 		return json.dumps(self.toDict(), ensure_ascii=False)
 
 
+def modeRoom(submode):
+	random_time = random.random()
+	topicList_response = requests.post("http://pantip.com/forum/topic/ajax_json_all_topic_info_loadmore?t=%s"%(random_time), 
+				data = {'last_id_current_page' : "35100000",
+						'dataSend[room]' : "food",
+						'dataSend[topic_type][type]' : "0",
+						'dataSend[topic_type][default_type]' : "1",
+						'thumbnailview' : "false",
+						'current_page': "1"
+						},
+				headers=udg_header_comment)
 
-if __name__ == "__main__":
-	if not os.path.exists(udg_storage_dir):
-		os.makedirs(udg_storage_dir)
-	if not len(sys.argv) == 2:
-		print "Please enter starting pageID to start program."
-		print "E.g. python pantipScraper.py 35000000"
-		exit()
-	pageID = (int)(sys.argv[1])
+	topicList = topicList_response.json()
+	for topic in topicList['item']['topic']:
+		print topic['_id'] ,
+
+def modeBruteID(submode):
+	if submode['start'] == 1:
+		pageID = submode['tid']
 	storage_file = str(pageID / 1000)
 	f = open(udg_storage_dir + "/ptopic" + storage_file, "a+")
 	indexFile = open(udg_storage_dir + "/indexFile.txt", "w+")
@@ -312,4 +306,68 @@ if __name__ == "__main__":
 			print "Failed: Crawling page %s: "%(pageID) + functionData.getData().encode(udg_thaiEncode)
 		pageID = pageID + 1
 		time.sleep(3)
+
+
+if __name__ == "__main__":
+	if not os.path.exists(udg_storage_dir):
+		os.makedirs(udg_storage_dir)
+
+	index = 1
+	mode = ""
+	submode = {}
+	## Default ##
+	submode['start'] = 1
+	mode = modeBruteID
+	#############
+	if len(sys.argv) > 1:
+		if sys.argv[1] == '-h' or sys.argv[1] == '--help' or sys.argv[1] == "help":
+			helpMode()
+			exit()
+		while index < len(sys.argv):
+			if sys.argv[index] == "-r":
+				mode = modeRoom
+			elif sys.argv[index] == "-b":
+				mode = modeBruteID
+			elif sys.argv[index] == "-cont":
+				submode['start'] = 0
+			elif sys.argv[index] == "-start":
+				submode['start'] = 1
+			elif sys.argv[index] == "-tid":
+				index = index + 1
+				submode['tid'] = (int)(sys.argv[index])
+			elif index == (len(sys.argv)-1) and (not mode == modeRoom):
+				mode = modeBruteID
+				submode['tid'] = (int)(sys.argv[index])
+			else:
+				print "You just typed invalid mode: " + sys.argv[index]
+				exit()
+			index = index + 1
+	else:
+		print "Please enter mode to start program."
+		print "E.g. python pantipScraper.py 35000000"
+		exit()
+	mode(submode)
+	# if len(sys.argv) == 2:
+	# 	pageID = (int)(sys.argv[1])
+	# 	modeBruteID(pageID)
+	# if len(sys.argv) > 2:
+	# 	if sys.argv[1] == "-r":
+	# 		modeRoom()
+	# 	if sys.argv[1] == "-b":
+	# 		pageID = (int)(sys.argv[2])
+	# 		modeBruteID(pageID)
+
+def helpMode():
+	print ""
+	print "== Quick use =="
+	print "python pantipScraper.py <topic_id>"
+	print ""
+	print "== Mode =="
+	print "\t-b\tbrute topic ID"
+	print "\t\t-tid <id>\t start from selected topic id"
+	print "\t-r\tbrute from selected pantip room"
+	print "\t\t-start <room>\t start from newest topic from room"
+	print "\t\t-tid <id> <room>\t start from selected id from room"
+	print "\t-c\tcontinue from previous work"
+	print ""
 
