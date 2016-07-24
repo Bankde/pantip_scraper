@@ -49,9 +49,7 @@ class PantipCrawler:
 
 	def __init__(self, tid):
 		self.tid = tid
-		self.commentCount = 0
 		self.topic = ''
-		self.comments = ''
 
 	def crawl(self):
 		while True:
@@ -68,16 +66,16 @@ class PantipCrawler:
 				if functionData.getStatus == False:
 					return functionData
 				else:
-					self.comments = functionData.getData()
-
-				# print json.dumps(self.comments, ensure_ascii=False)
-				# s = json.dumps(self.topic.toDict(), ensure_ascii=False)
+					comments = functionData.getData()
 
 				# Get Comment count
-				if self.comments and 'count' not in self.comments:
-					self.commentCount = 0
+				if comments:
+					commentCount = len(comments)
 				else:
-					self.commentCount = self.comments['count']
+					commentCount = 0
+
+				self.topic.commentCount = commentCount
+				self.topic.comments = comments
 
 				rData = ReturnData(True, "Success: Crawling page %s"%(self.tid))
 				return rData
@@ -89,19 +87,17 @@ class PantipCrawler:
 				time.sleep(10)
 
 	def __str__(self):
-		return (str(self.topic) + "\r\n" +
-			"Comment count: %s\r\n"%(self.commentCount))
+		return str(self.topic)
 
 	def toDict(self):
 		tempDict = self.topic.toDict()
-		tempDict['commentCount'] = self.commentCount
 		return tempDict
 
 	def toJson(self):
 		return json.dumps(self.toDict(), ensure_ascii=False)
 
 class Topic:
-	def __init__(self, tid, name, author, author_id, story, likeCount, emoCount, emotions, tags, time):
+	def __init__(self, tid, name, author, author_id, story, likeCount, emoCount, emotions, tags, time, commentCount=0, comments=[]):
 		self.tid = tid
 		self.name = name
 		self.author = author
@@ -112,6 +108,8 @@ class Topic:
 		self.emotions = emotions
 		self.tagList = tags
 		self.dateTime = time
+		self.commentCount = 0
+		self.comments = []
 
 	@staticmethod
 	def get_topic_from_link(tid):
@@ -129,8 +127,6 @@ class Topic:
 				return rData
 
 		start_page.encoding = udg_thaiEncode
-		# validText = validateText(start_page.text)
-		# tree = html.fromstring(validText)
 		tree = html.fromstring(start_page.text)
 		
 		if tree.xpath('//div[starts-with(@class,"callback-status")]/text()'):
@@ -165,7 +161,9 @@ class Topic:
 			'emoCount' : self.emoCount,
 			'emotions' : self.emotions.toDict(),
 			'tagList' : self.tagList,
-			'dateTime' : self.dateTime
+			'dateTime' : self.dateTime,
+			'commentCount' : self.commentCount,
+			'comments' : [comment.toDict() for comment in self.comments]
 		}
 
 	def toJson(self):
@@ -177,13 +175,15 @@ class Topic:
 			"\r\nText: " + self.story.encode(udg_thaiEncode) + "\r\n"
 			"\r\nLike Count: %s\r\nEmotion Count: %s"%(self.likeCount, self.emoCount) +
 			"\r\nTag-item: " + ",".join(self.tagList).encode(udg_thaiEncode) +
-			"\r\nDatetime: " + self.dateTime)
+			"\r\nDatetime: " + self.dateTime +
+			"\r\nCommentCount: " + self.commentCount)
 
 class Comment:
-	def __init__(self, num, user_id, user_name, replies, message, emotions, likeCount, dateTime):
+	def __init__(self, num, user_id, user_name, replyCount, replies, message, emotions, likeCount, dateTime):
 		self.num = num
 		self.user_id = user_id
 		self.user_name = user_name
+		self.replyCount = replyCount
 		self.replies = replies
 		self.message = message
 		self.emotions = emotions
@@ -194,6 +194,8 @@ class Comment:
 	def get_comments_from_link(tid):
 		global udg_header_comment
 		udg_header_comment['Referer'] = "http://pantip.com/topic/%s"%(tid)
+		
+		comments = []
 		index = 0
 		while(index < 4):
 			random_time = random.random()
@@ -208,21 +210,54 @@ class Comment:
 				return rData
 
 		comment_response.encoding = udg_thaiEncode
-		comments = comment_response.json()
+		comment_response_json = comment_response.json()
+		for c in comment_response_json['comments']:
+			comments.append(Comment.convertPantip2Python(c))
 
-		# 	jquery.topic-renovate.js
-		# 	$.commentTopic.replyNext = function(){
-		# $(document).on('click','.load-reply-next',function(){
-		# 	var id = $(this).data('lmr').split('-');
-		# 	var lastId = id[0];
-		# 	var refId = id[1];
-		# 	var refCount = id[2];
-		# 	var refBar = $(this).parents('.loadmore-bar-paging.sub-loadmore').get(0).id;
-		# 	#	Owner of TOPIC
-		# 	var owner = $('.main-post-inner').find('.display-post-name.owner').get(0).id;
-			
+		if comment_response_json and 'count' not in comment_response_json:
+			commentCount = 0
+		else:
+			commentCount = comment_response_json['count']
+
+		if int(commentCount) > 100:
+			pageIndex = 2
+			while commentCount > (pageIndex-1)*100:
+				index = 0
+				while index < 4:
+					random_time = random.random()
+					comment_response = requests.get("http://pantip.com/forum/topic/render_comments?tid=%s&param=page%s&type=4&page=%s&parent=2&expand=1&time=%s"%(tid, pageIndex, pageIndex, random_time),
+							headers=udg_header_comment)
+					if (comment_response.reason == 'OK'):
+						break
+					else:
+						index = index + 1
+					if index == 4:
+						rData = ReturnData(False, "Cannot get comments %s: "%(tid) + start_page.reason)
+						return rData
+
+				comment_response.encoding = udg_thaiEncode
+				comment_response_json = comment_response.json()
+				for c in comment_response_json['comments']:
+					comments.append(Comment.convertPantip2Python(c))
+				pageIndex += 1
+
 		rData = ReturnData(True, comments)
-		return rData		
+		return rData
+
+	@staticmethod
+	def convertPantip2Python(comment):
+		# Coming soon
+		replies = []
+		emotions = Emotion.convertPantip2Python(comment['emotion'])
+		return Comment(comment['comment_no'], 
+			comment['user']['mid'], 
+			comment['user']['name'], 
+			comment['reply_count'], 
+			replies, 
+			comment['message'], 
+			emotions, 
+			comment['point'], 
+			comment['data_utime'])
 
 	def toDict(self):
 		return {
@@ -230,6 +265,7 @@ class Comment:
 			'user_id' : self.user_id,
 			'user_name' : self.user_name,
 			# I'm still thinking how should I handel the replies
+			'replyCount' : self.replyCount,
 			'replies' : self.replies,
 			'message' : self.message,
 			'emotions' : self.emotions.toDict(),
@@ -249,6 +285,15 @@ class Emotion:
 		self.impress = impress
 		self.scary = scary
 		self.surprised = surprised
+
+	@staticmethod
+	def convertPantip2Python(emotions):
+		return Emotion(emotions['like']['count'], 
+			emotions['laugh']['count'], 
+			emotions['love']['count'], 
+			emotions['impress']['count'], 
+			emotions['scary']['count'], 
+			emotions['surprised']['count'])
 
 	def toDict(self):
 		return {
@@ -347,15 +392,6 @@ if __name__ == "__main__":
 		print "E.g. python pantipScraper.py 35000000"
 		exit()
 	mode(submode)
-	# if len(sys.argv) == 2:
-	# 	pageID = (int)(sys.argv[1])
-	# 	modeBruteID(pageID)
-	# if len(sys.argv) > 2:
-	# 	if sys.argv[1] == "-r":
-	# 		modeRoom()
-	# 	if sys.argv[1] == "-b":
-	# 		pageID = (int)(sys.argv[2])
-	# 		modeBruteID(pageID)
 
 def helpMode():
 	print ""
