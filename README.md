@@ -37,13 +37,13 @@ Extra Feature
 
 - no image being extracts (I can't decide how to save image properly and how to link that image to topic)
 - no poll information and topic with poll might be extracted incorrectly
-- only first 100 comments are gathered (for now, I will update in very near future)
 - no reply to comment yet (sry, I'm working on it)
-- Small problem on reading JSON because of encoding (I suggest using python3 when reading those file, you still need to use python2 to run this program though). In python2, You can easily get pass encoding problem by following my example.
 
 # Json Structure
 
-JSON structure is as followed:
+JSON structure is as following:
+
+== Topic ==
 - tid (อันนี้หมายถึง topic id)
 - name (topic name)
 - author
@@ -51,14 +51,29 @@ JSON structure is as followed:
 - story
 - likeCount
 - emoCount
-- emotions
-  - > like
-  - >	laugh
-  - > love
-  - > impress
-  - > scary
-  - > surprised
-- tagList (จะเป็น array)
+- emotions (as Emotion object)
+- tagList (as array of string)
 - dateTime
+- commentCount
+- comments (as array of Comment object)
+
+== Comment ==
+- num
+- user_id
+- user_name
+- replyCount
+- replies (still working on it)
+- message
+- emotions (as Emotion object) 
+- likeCount
+- dateTime
+
+== Emotion ==
+- like
+- laugh
+- love
+- impress
+- scary
+- surprised
 
 # Credit, Feedback, Suggestion is appreciated.
