@@ -137,7 +137,6 @@ class Topic:
 		name = tree.xpath('//h2[@class="display-post-title"]/text()')[0]
 		author = tree.xpath('//a[@class="display-post-name owner"]/text()')[0]
 		author_id = tree.xpath('//a[@class="display-post-name owner"]/@id')[0]
-		# story = tree.xpath('//div[@class="display-post-story"]/text()')[0]
 		story = tree.xpath('//div[@class="display-post-story"]')[0].text_content()
 		likeCount = tree.xpath('//span[starts-with(@class,"like-score")]/text()')[0]
 		emoCount = tree.xpath('//span[starts-with(@class,"emotion-score")]/text()')[0]
@@ -326,8 +325,9 @@ def modeRoom(submode):
 		print topic['_id'] ,
 
 def modeBruteID(submode):
-	if submode['start'] == 1:
-		pageID = submode['tid']
+	pageID = submode['pageID']
+	endID = submode['endID']
+
 	storage_file = str(pageID / 1000)
 	f = open(udg_storage_dir + "/ptopic" + storage_file, "a+")
 	indexFile = open(udg_storage_dir + "/indexFile.txt", "w+")
@@ -350,6 +350,8 @@ def modeBruteID(submode):
 			errorFile.write("Failed: Crawling page %s: "%(pageID) + functionData.getData().encode(udg_thaiEncode) + "\n")
 			print "Failed: Crawling page %s: "%(pageID) + functionData.getData().encode(udg_thaiEncode)
 		pageID = pageID + 1
+		if pageID > endID:
+			break
 		time.sleep(3)
 
 
@@ -361,7 +363,7 @@ if __name__ == "__main__":
 	mode = ""
 	submode = {}
 	## Default ##
-	submode['start'] = 1
+	submode['mode'] = "get"
 	mode = modeBruteID
 	#############
 	if len(sys.argv) > 1:
@@ -373,14 +375,20 @@ if __name__ == "__main__":
 				mode = modeRoom
 			elif sys.argv[index] == "-b":
 				mode = modeBruteID
-			elif sys.argv[index] == "-cont":
-				submode['start'] = 0
+			elif sys.argv[index] == "-cont" or sys.argv[index] == "-c":
+				submode['mode'] = "cont"
 			elif sys.argv[index] == "-start":
-				submode['start'] = 1
-			elif sys.argv[index] == "-tid":
+				submode['mode'] = "start"
+				index = index + 1
+				submode['start'] = (int)(sys.argv[index])
+			elif sys.argv[index] == "-end":
+				index = index + 1
+				submode['end'] = (int)(sys.argv[index])
+			elif sys.argv[index] == "-tid" or sys.argv[index] == "-get":
+				submode['mode'] = "get"
 				index = index + 1
 				submode['tid'] = (int)(sys.argv[index])
-			elif index == (len(sys.argv)-1) and (not mode == modeRoom):
+			elif index == (len(sys.argv)-1) and ('start' not in submode) and ('end' not in submode):
 				mode = modeBruteID
 				submode['tid'] = (int)(sys.argv[index])
 			else:
@@ -391,19 +399,37 @@ if __name__ == "__main__":
 		print "Please enter mode to start program."
 		print "E.g. python pantipScraper.py 35000000"
 		exit()
-	mode(submode)
+
+	# Arrange the input
+	funcArgv = {}
+	if 'end' not in submode:
+		funcArgv['endID'] = 100000000000
+	else:
+		funcArgv['endID'] = submode['end']
+
+	if submode['mode'] == "start":
+		funcArgv['pageID'] = submode['start']
+	elif submode['mode'] == "get":
+		funcArgv['pageID'] = submode['tid']
+		funcArgv['endID'] = submode['tid']
+	mode(funcArgv)
+
+	print "Finished scraping"
 
 def helpMode():
 	print ""
 	print "== Quick use =="
-	print "python pantipScraper.py <topic_id>"
+	print "To get a topic: python pantipScraper.py <topic_id>"
+	print "Start from: python pantipScraper.py -start <topic_id>"
+	print "End at: python pantipScraper.py -start <topic_id> -end <topic_id>"
 	print ""
 	print "== Mode =="
 	print "\t-b\tbrute topic ID"
-	print "\t\t-tid <id>\t start from selected topic id"
-	print "\t-r\tbrute from selected pantip room"
-	print "\t\t-start <room>\t start from newest topic from room"
-	print "\t\t-tid <id> <room>\t start from selected id from room"
+	print "\t-r <room>\tbrute from selected pantip room"
 	print "\t-c\tcontinue from previous work"
+	print "== Submode =="
+	print "\t-tid <id>\t get data from selected topic id"
+	print "\t-start <id>\t start from selected topic id"
+	print "\t-end <id>\t stop at selected topic id (leave this empty for infinite)"
 	print ""
 
