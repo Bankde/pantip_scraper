@@ -5,6 +5,7 @@ This is web scraper for pantip written in python2
 
 # How to use
 
+<br />
 
 To get a topic: python pantipScraper.py topic_id
 	
@@ -12,15 +13,15 @@ Start from: python pantipScraper.py -start topic_id
 	
 End at: python pantipScraper.py -start topic_id -end topic_id
 
+<br />
 
+Example: `python pantipScraper.py 35000000`
 
-Example: python pantipScraper.py 35000000
+Example: `python pantipScraper.py -start 35000000`
 
-Example: python pantipScraper.py -start 35000000
+Example: `python pantipScraper.py -start 35000000 -end 35001000`
 
-Example: python pantipScraper.py -start 35000000 -end 35001000
-
-
+<br />
 
 Example of reading JSON is in readExample.py
 
@@ -70,6 +71,8 @@ JSON structure is as following:
 - commentCount
 - comments (as array of Comment object)
 
+<br />
+
 == Comment ==
 - num
 - user_id
@@ -80,6 +83,8 @@ JSON structure is as following:
 - emotions (as Emotion object) 
 - likeCount
 - dateTime
+
+<br />
 
 == Emotion ==
 - like
