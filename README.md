@@ -5,9 +5,20 @@ This is web scraper for pantip written in python2
 
 # How to use
 
-To use: python pantipScraper.py start_topic_id_here
+To get a topic: python pantipScraper.py <topic_id>
+	
+Start from: python pantipScraper.py -start <topic_id>
+	
+End at: python pantipScraper.py -start <topic_id> -end <topic_id>
 
-Example: python pantipScraper.py 35143000
+Example: python pantipScraper.py 35000000
+
+Example: python pantipScraper.py -start 35000000
+
+Example: python pantipScraper.py -start 35000000 -end 35001000
+
+
+
 
 Example of reading JSON is in readExample.py
 
