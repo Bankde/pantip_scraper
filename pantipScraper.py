@@ -128,10 +128,10 @@ class Topic:
 
 		start_page.encoding = udg_thaiEncode
 		tree = html.fromstring(start_page.text)
-		
-		if tree.xpath('//div[starts-with(@class,"callback-status")]/text()'):
+
+		if tree.xpath('//div[starts-with(@class,"callback-status")]')[0].text_content():
 			if not tree.xpath('//h2[@class="display-post-title"]/text()'):
-				rData = ReturnData(False, tree.xpath('//div[starts-with(@class,"callback-status")]/text()')[0].strip())
+				rData = ReturnData(False, tree.xpath('//div[starts-with(@class,"callback-status")]')[0].text_content().strip())
 				return rData
 
 		name = tree.xpath('//h2[@class="display-post-title"]/text()')[0]
