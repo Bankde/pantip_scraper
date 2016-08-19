@@ -33,6 +33,9 @@ udg_header_comment = {
 }
 udg_storage_dir = "pantip_storage"
 
+# GLOBAL MODE # // This shouldn't be global but global is easier for faster develop
+disableCommentFeature = False
+
 class ReturnData:
 
 	def __init__(self, status, data):
@@ -129,7 +132,8 @@ class Topic:
 		start_page.encoding = udg_thaiEncode
 		tree = html.fromstring(start_page.text)
 
-		if tree.xpath('//div[starts-with(@class,"callback-status")]')[0].text_content():
+		tmp = tree.xpath('//div[starts-with(@class,"callback-status")]')
+		if tmp and tmp[0].text_content():
 			if not tree.xpath('//h2[@class="display-post-title"]/text()'):
 				rData = ReturnData(False, tree.xpath('//div[starts-with(@class,"callback-status")]')[0].text_content().strip())
 				return rData
@@ -192,8 +196,9 @@ class Comment:
 	@staticmethod
 	def get_comments_from_link(tid):
 		global udg_header_comment
+		global disableCommentFeature
+
 		udg_header_comment['Referer'] = "http://pantip.com/topic/%s"%(tid)
-		
 		comments = []
 		index = 0
 		while(index < 4):
@@ -210,35 +215,39 @@ class Comment:
 
 		comment_response.encoding = udg_thaiEncode
 		comment_response_json = comment_response.json()
-		for c in comment_response_json['comments']:
-			comments.append(Comment.convertPantip2Python(c))
 
 		if comment_response_json and 'count' not in comment_response_json:
 			commentCount = 0
 		else:
 			commentCount = comment_response_json['count']
 
-		if int(commentCount) > 100:
-			pageIndex = 2
-			while commentCount > (pageIndex-1)*100:
-				index = 0
-				while index < 4:
-					random_time = random.random()
-					comment_response = requests.get("http://pantip.com/forum/topic/render_comments?tid=%s&param=page%s&type=4&page=%s&parent=2&expand=1&time=%s"%(tid, pageIndex, pageIndex, random_time),
-							headers=udg_header_comment)
-					if (comment_response.reason == 'OK'):
-						break
-					else:
-						index = index + 1
-					if index == 4:
-						rData = ReturnData(False, "Cannot get comments %s: "%(tid) + start_page.reason)
-						return rData
+		if not disableCommentFeature and not commentCount == 0:
+			for c in comment_response_json['comments']:
+				comments.append(Comment.convertPantip2Python(c))
 
-				comment_response.encoding = udg_thaiEncode
-				comment_response_json = comment_response.json()
-				for c in comment_response_json['comments']:
-					comments.append(Comment.convertPantip2Python(c))
-				pageIndex += 1
+			if int(commentCount) > 100:
+				pageIndex = 2
+				while commentCount > (pageIndex-1)*100:
+					index = 0
+					while index < 4:
+						random_time = random.random()
+						comment_response = requests.get("http://pantip.com/forum/topic/render_comments?tid=%s&param=page%s&type=4&page=%s&parent=2&expand=1&time=%s"%(tid, pageIndex, pageIndex, random_time),
+								headers=udg_header_comment)
+						if (comment_response.reason == 'OK'):
+							break
+						else:
+							index = index + 1
+						if index == 4:
+							rData = ReturnData(False, "Cannot get comments %s: "%(tid) + start_page.reason)
+							return rData
+
+					comment_response.encoding = udg_thaiEncode
+					comment_response_json = comment_response.json()
+					for c in comment_response_json['comments']:
+						comments.append(Comment.convertPantip2Python(c))
+					pageIndex += 1
+		else:
+			comments = {}
 
 		rData = ReturnData(True, comments)
 		return rData
@@ -388,11 +397,14 @@ if __name__ == "__main__":
 				submode['mode'] = "get"
 				index = index + 1
 				submode['tid'] = (int)(sys.argv[index])
+			elif sys.argv[index] == "-noComment":
+				disableCommentFeature = True
 			elif index == (len(sys.argv)-1) and ('start' not in submode) and ('end' not in submode):
 				mode = modeBruteID
 				submode['tid'] = (int)(sys.argv[index])
 			else:
 				print "You just typed invalid mode: " + sys.argv[index]
+				print "PS: please type ID as last parameter (or after -tid, -start, -end)"
 				exit()
 			index = index + 1
 	else:
@@ -431,5 +443,6 @@ def helpMode():
 	print "\t-tid <id>\t get data from selected topic id"
 	print "\t-start <id>\t start from selected topic id"
 	print "\t-end <id>\t stop at selected topic id (leave this empty for infinite)"
+	print "\t-noComment\t do not save comment (save data storage, bandwidth is still used)"
 	print ""
 

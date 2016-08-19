@@ -6,7 +6,7 @@ import os
 import fullgraph as fg
 
 THAI_ENCODING = 'utf-8'
-DATASET_PATH = "pantip_storage"
+DATASET_PATH = "old_pantip_storage"
 
 class PantipGraph(object):
 
