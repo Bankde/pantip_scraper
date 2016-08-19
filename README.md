@@ -5,6 +5,8 @@ This is web scraper for pantip written in python2
 
 # How to use
 
+`Before anything: If you get any error, feel free to raise issue/bug or mail me. Usually it's not your fault. Pantip Web developers also change their code from time to time. I will try to update pantipScraper to match current pantip code.`
+
 To get a topic: python pantipScraper.py topic_id
 
 Example: `python pantipScraper.py 35000000`
@@ -16,6 +18,10 @@ Example: `python pantipScraper.py -start 35000000`
 End at: python pantipScraper.py -start topic_id -end topic_id
 
 Example: `python pantipScraper.py -start 35000000 -end 35001000`
+
+Without comment: -noComment
+
+Example: `python pantipScraper.py -noComment -start 35000000`
 
 <br />
 
