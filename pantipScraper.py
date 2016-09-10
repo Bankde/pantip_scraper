@@ -346,7 +346,7 @@ def modeBruteID(submode):
 		if temp_file != storage_file:
 			storage_file = temp_file
 			f.close()
-			f = codecs.open(udg_storage_dir + "/ptopic" + storage_file, "a+", encoding=udg_thaiEncode)
+			f = open(udg_storage_dir + "/ptopic" + storage_file, "a+")
 		crawler = PantipCrawler(str(pageID))
 		functionData = crawler.crawl()
 		if functionData.getStatus() == True:
