@@ -363,6 +363,23 @@ def modeBruteID(submode):
 			break
 		time.sleep(3)
 
+def helpMode():
+	print ""
+	print "== Quick use =="
+	print "To get a topic: python pantipScraper.py <topic_id>"
+	print "Start from: python pantipScraper.py -start <topic_id>"
+	print "End at: python pantipScraper.py -start <topic_id> -end <topic_id>"
+	print ""
+	print "== Mode =="
+	print "\t-b\tbrute topic ID"
+	print "\t-r <room>\tbrute from selected pantip room"
+	print "\t-c\tcontinue from previous work"
+	print "== Submode =="
+	print "\t-tid <id>\t get data from selected topic id"
+	print "\t-start <id>\t start from selected topic id"
+	print "\t-end <id>\t stop at selected topic id (leave this empty for infinite)"
+	print "\t-noComment\t do not save comment (save data storage, bandwidth is still used)"
+	print ""
 
 if __name__ == "__main__":
 	if not os.path.exists(udg_storage_dir):
@@ -410,6 +427,7 @@ if __name__ == "__main__":
 	else:
 		print "Please enter mode to start program."
 		print "E.g. python pantipScraper.py 35000000"
+		print "For more mode: python pantipScraper.py --help"
 		exit()
 
 	# Arrange the input
@@ -427,22 +445,4 @@ if __name__ == "__main__":
 	mode(funcArgv)
 
 	print "Finished scraping"
-
-def helpMode():
-	print ""
-	print "== Quick use =="
-	print "To get a topic: python pantipScraper.py <topic_id>"
-	print "Start from: python pantipScraper.py -start <topic_id>"
-	print "End at: python pantipScraper.py -start <topic_id> -end <topic_id>"
-	print ""
-	print "== Mode =="
-	print "\t-b\tbrute topic ID"
-	print "\t-r <room>\tbrute from selected pantip room"
-	print "\t-c\tcontinue from previous work"
-	print "== Submode =="
-	print "\t-tid <id>\t get data from selected topic id"
-	print "\t-start <id>\t start from selected topic id"
-	print "\t-end <id>\t stop at selected topic id (leave this empty for infinite)"
-	print "\t-noComment\t do not save comment (save data storage, bandwidth is still used)"
-	print ""
 
