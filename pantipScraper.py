@@ -20,7 +20,7 @@ import os, sys
 import re
 import codecs
 
-udg_thaiEncode = 'UTF-8'
+udg_thaiEncode = 'utf-8-sig'
 udg_header = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.11; rv:42.0) Gecko/20100101 Firefox/42.0'}
 udg_header_comment = {
 	'Host': 'pantip.com',
@@ -83,10 +83,10 @@ class PantipCrawler:
 				rData = ReturnData(True, "Success: Crawling page %s"%(self.tid))
 				return rData
 			except ConnectionError as e:
-				print "Connection error: Program will try again in 10s. Ctrl+c to quit"
+				print("Connection error: Program will try again in 10s. Ctrl+c to quit")
 				time.sleep(10)
 			except ReadTimeout as e:
-				print "Request timeout: Program will try again in 10s. Ctrl+c to quit"
+				print("Request timeout: Program will try again in 10s. Ctrl+c to quit")
 				time.sleep(10)
 
 	def __str__(self):
@@ -331,55 +331,55 @@ def modeRoom(submode):
 
 	topicList = topicList_response.json()
 	for topic in topicList['item']['topic']:
-		print topic['_id'] ,
+		print(topic['_id']),
 
 def modeBruteID(submode):
 	pageID = submode['pageID']
 	endID = submode['endID']
 
-	storage_file = str(pageID / 1000)
-	f = open(udg_storage_dir + "/ptopic" + storage_file, "a+")
+	storage_file = 0
+	f = None
 	indexFile = open(udg_storage_dir + "/indexFile.txt", "w+")
 	errorFile = open(udg_storage_dir + "/errorFile.txt", "a+")
 	while (True):
-		temp_file = str(pageID / 1000)
+		temp_file = str(int(pageID / 1000))
 		if temp_file != storage_file:
 			storage_file = temp_file
-			f.close()
-			f = open(udg_storage_dir + "/ptopic" + storage_file, "a+")
+			f.close() if f else None
+			f = open(udg_storage_dir + "/ptopic" + storage_file, "ab+")
 		crawler = PantipCrawler(str(pageID))
 		functionData = crawler.crawl()
 		if functionData.getStatus() == True:
-			f.write(crawler.toJson().encode('UTF-8'))
-			f.write("\n")
+			f.write(crawler.toJson().encode(udg_thaiEncode))
+			f.write(b"\n")
 			indexFile.seek(0,0)
 			indexFile.write("Done: %s\n"%(pageID))
-			print functionData.getData()
+			print(functionData.getData())
 		else:
-			errorFile.write("Failed: Crawling page %s: "%(pageID) + functionData.getData().encode(udg_thaiEncode) + "\n")
-			print "Failed: Crawling page %s: "%(pageID) + functionData.getData().encode(udg_thaiEncode)
+			errorFile.write("Failed: Crawling page %s: "%(pageID) + functionData.getData() + "\n")
+			print("Failed: Crawling page %s: "%(pageID) + functionData.getData())
 		pageID = pageID + 1
 		if pageID > endID:
 			break
 		time.sleep(3)
 
 def helpMode():
-	print ""
-	print "== Quick use =="
-	print "To get a topic: python pantipScraper.py <topic_id>"
-	print "Start from: python pantipScraper.py -start <topic_id>"
-	print "End at: python pantipScraper.py -start <topic_id> -end <topic_id>"
-	print ""
-	print "== Mode =="
-	print "\t-b\tbrute topic ID"
-	print "\t-r <room>\tbrute from selected pantip room"
-	print "\t-c\tcontinue from previous work"
-	print "== Submode =="
-	print "\t-tid <id>\t get data from selected topic id"
-	print "\t-start <id>\t start from selected topic id"
-	print "\t-end <id>\t stop at selected topic id (leave this empty for infinite)"
-	print "\t-noComment\t do not save comment (save data storage, bandwidth is still used)"
-	print ""
+	print("""
+== Quick use ==
+To get a topic: python pantipScraper.py <topic_id>
+Start from: python pantipScraper.py -start <topic_id>
+End at: python pantipScraper.py -start <topic_id> -end <topic_id>
+
+== Mode ==
+\t-b\t\tbrute topic ID
+\t-r <room>\tbrute from selected pantip room
+\t-c\t\tcontinue from previous work
+== Submode ==
+\t-tid <id>\t get data from selected topic id
+\t-start <id>\t start from selected topic id
+\t-end <id>\t stop at selected topic id (leave this empty for infinite)
+\t-noComment\t do not save comment (save data storage, bandwidth is still used)
+""")
 
 if __name__ == "__main__":
 	if not os.path.exists(udg_storage_dir):
@@ -420,14 +420,16 @@ if __name__ == "__main__":
 				mode = modeBruteID
 				submode['tid'] = (int)(sys.argv[index])
 			else:
-				print "You just typed invalid mode: " + sys.argv[index]
-				print "PS: please type ID as last parameter (or after -tid, -start, -end)"
+				print("You just typed invalid mode: " + sys.argv[index])
+				print("PS: please type ID as last parameter (or after -tid, -start, -end)")
 				exit()
 			index = index + 1
 	else:
-		print "Please enter mode to start program."
-		print "E.g. python pantipScraper.py 35000000"
-		print "For more mode: python pantipScraper.py --help"
+		print("""
+Please enter mode to start program.
+E.g. python pantipScraper.py 35000000
+For more mode: python pantipScraper.py --help
+""")
 		exit()
 
 	# Arrange the input
@@ -444,5 +446,5 @@ if __name__ == "__main__":
 		funcArgv['endID'] = submode['tid']
 	mode(funcArgv)
 
-	print "Finished scraping"
+	print("Finished scraping")
 
